@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="google-site-verification" content="5URsHUYz2xi77AaBrLikelwaxsLl1nSr5w5jAbKdkFI" />
+  <meta http-equiv="Content-Type" content="text/html; Charset=UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-Equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width">
+  <style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    /* This removes the border around the viewport in old versions of IE */
+    width: 100%;
+    height: 100%;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    /* Needed for iOS/Android.  Otherwise, does highlight on things that are tapped. */
+    outline: 0;
+  }
+
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 128px;
+    margin-left: -78px;
+    width: 130px;
+  }
+
+  .tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: black transparent transparent transparent;
+  }
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+  }
+  </style>
+  <link rel="stylesheet" type="text/css" href="./css/fonts.css">
+  <title></title>
+</head>
+
+<body>
+  <div style="width: 100%; height: 100%;">
+    <div id="tracker" style="display: -webkit-flex; justify-content: center; flex-direction: row; width: 100%; height: 100%; overflow:auto">
+    </div>
+  </div>
+  <script type="text/javascript" src="./jquery-2.0.0.min.js"></script>
+  <script type="text/javascript" src="./PV.js"></script>
+  <script>
+  /*globals $:false, PV */
+  'use strict';
+
+  let getQueryVariable = function(variable) {
+    let query = window.location.search.substring(1);
+    let vars = query.split('&');
+    for (let i = 0; i < vars.length; i++) {
+      let pair = vars[i].split('=');
+      if (decodeURIComponent(pair[0]) == variable) {
+        return decodeURIComponent(pair[1]);
+      }
+    }
+    return null;
+  };
+
+  let phase = getQueryVariable('status');
+  let host = getQueryVariable('host');
+  let fct = getQueryVariable('fct');
+  let predicate = getQueryVariable('predicate');
+  let role = getQueryVariable('role');
+  let authenticationType = getQueryVariable('authenticationType');
+  let userPredicate = getQueryVariable('userPredicate');
+
+  let baseUrl = host + 'dataset/';
+
+  let background = 'rgb(187,209,235)';
+  let pointsBackground = 'rgb(85,140,204)';
+  let activeBackground = 'rgb(203,231,188';
+  let activePointsBackground = 'rgb(115,188,78)';
+
+  let font = ' Arial, sans-serif';
+  if (/(Mac)/g.test(window.navigator.userAgent)) {
+    font = 'HelveticaNeue' + font;
+  } else {
+    font = 'Roboto-Regular' + font;
+  }
+
+  let createStatusTracker = function(statusDetails, body) {
+    let title = statusDetails.title;
+    let id = statusDetails.id;
+
+    let containerBackground = background;
+    let contentBackground = pointsBackground;
+    if (statusDetails.active === true) {
+      containerBackground = activeBackground;
+      contentBackground = activePointsBackground;
+    }
+    let containerBGObj = PV.colorToRgba(containerBackground);
+    let contentBGObj = PV.colorToRgba(contentBackground);
+
+    let width = 350;
+    let containerMargin = 10;
+
+    let container = $('<div id="' + id + '" ></div>').css({
+      'display': 'table',
+      'position': 'relative',
+      'height': 'calc(100% - ' + (containerMargin + 1) + 'px)',
+      'width': width + 'px',
+      'border-radius': '8px',
+      'margin': (containerMargin / 2) + 'px',
+      'background-color': containerBackground
+    });
+    body.append(container);
+
+    let headerFontSize = 20;
+    let headerHeight = headerFontSize * 2.5;
+    let headerColor = PV.useWhiteOnColor(containerBGObj.r, containerBGObj.g, containerBGObj.b) ? 'white' : 'black';
+    let header = $('<div id="' + id + '_header" ></div>').css({
+      'line-height': headerHeight + 'px',
+      'height': headerHeight + 'px',
+      'text-align': 'center',
+      'font-family': font,
+      'font-size': headerFontSize + 'px',
+      'font-weight': 'bold',
+      'color': headerColor
+    });
+    header.text(title);
+    container.append(header);
+
+    let contentFontSize = 14;
+    let contentMargin = 10;
+    let contentHeight = headerHeight + containerMargin;
+    let contentColor = PV.useWhiteOnColor(contentBGObj.r, contentBGObj.g, contentBGObj.b) ? 'white' : 'black';
+    let content = $('<ul type="disc" id="' + id + '_content" ></ul>').css({
+      'font-family': font,
+      'font-size': contentFontSize + 'px',
+      'background-color': contentBackground,
+      'border-radius': '8px',
+      'margin': '0px ' + contentMargin + 'px ' + contentMargin + 'px',
+      'height': 'calc(100% - ' + contentHeight + 'px)'
+    });
+
+    let pointMargin = 12;
+    let points = statusDetails.points;
+    points.forEach(function(point, index) {
+      let url = '';
+      let pointColor = 'dimgray';
+      let roles = [];
+      if (PV.isArray(point.permissions[authenticationType])) {
+        roles = point.permissions[authenticationType];
+      }
+
+      if ((fct === 'false' && point.needFCT !== true) || fct === 'true') {
+        if (statusDetails.activeRange === true && roles.indexOf(role) > -1) {
+          if (point.needPredicate === false) {
+            url = ' target="_parent" href="' + baseUrl + encodeURIComponent(point.workflow) + '"';
+          } else {
+            let workflowPredicate = predicate;
+            if (point.workflow.toLowerCase().indexOf('commitment') > -1) {
+              if (point.nonSF) {
+                if (role === 'Sales Rep' && userPredicate) {
+                  workflowPredicate = workflowPredicate + encodeURIComponent('&') + userPredicate;
+                }
+              } else {
+                workflowPredicate = workflowPredicate.replace('MongoDB.Rounds._id', 'CommitmentLTC.round');
+              }
+            }
+            url = ' target="_parent" href="' + baseUrl + encodeURIComponent(point.workflow) + '?WORKFLOW_PREDICATE=' + workflowPredicate + '"';
+          }
+          pointColor = contentColor;
+        }
+      }
+
+      let pointContent = $('<li></li>').css({
+        'padding-right': (pointMargin / 2) + 'px',
+        'padding-top': (pointMargin / 2) + 'px',
+        'padding-bottom': (pointMargin / 2) + 'px',
+        'color': pointColor
+      });
+      if (index === points.length - 1) {
+        pointContent.css({
+          'padding-bottom': pointMargin + 'px'
+        });
+      } else if (index === 0) {
+        pointContent.css({
+          'padding-top': (pointMargin * 1.5) + 'px'
+        });
+      }
+
+      let pointArchor = $('<a class="tooltip"' + url + '></a>').css({
+        'color': pointColor,
+        'vertical-align': 'middle'
+      }).text(point.text);
+
+      if (point.tooltip && point.tooltip.length > 0) {
+        let pointTooltip = $('<span class="tooltiptext">' + point.tooltip.join('<br/>') + '</span>');
+        pointTooltip.css({
+          'font-family': font
+        });
+        pointArchor.append(pointTooltip);
+      }
+
+      pointContent.append(pointArchor);
+      content.append(pointContent);
+    });
+    container.append(content);
+  };
+
+  let roundStatus = [{
+    id: 'segmentGeneration',
+    title: 'Segment Generation',
+    points: [{
+      text: 'Start a new Round for a given start and end date',
+      workflow: 'Round Management',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Map new Data Points with correct dimensions',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Select dimensions to generate Segments',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Assign new Customers to existing Segments',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Validate prepared Segments',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Merge invalidate Segments into existing ones',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Split oversized Segments into new ones',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Assign Product Managers to each Segment and Data Point',
+      workflow: 'Segment Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Track Segment Coverage & Completion Rates',
+      workflow: 'Administration - Segment Coverage & Completion Rates',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Validate and promote the Round to Target Setting',
+      workflow: 'Round Management',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }]
+  }, {
+    id: 'targetSetting',
+    title: 'Target Setting',
+    points: [{
+      text: 'Analyze your segments using the Scatter Plot',
+      workflow: 'Segment Analysis',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Analyze Customers & Products using the Whale Curve',
+      workflow: 'Customer & Product Analysis',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Set Targets for each of the Tiers',
+      workflow: 'Segment Analysis',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Set Targets for each Data Point',
+      workflow: 'Segment Analysis',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Submit your completed Segments',
+      workflow: 'Segment Analysis',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Set Targets for each Data Point without Scatter Plots',
+      workflow: 'Target Setting Without Scatter Plot',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Generate BU Booklet/Extracts',
+      workflow: 'BU Booklet Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Track Target Setting Coverage',
+      workflow: 'Administration - Target Entry Statistics',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Create Scenarios to test different Settings',
+      workflow: 'Round Management',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator'],
+        PV: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }, {
+      text: 'Validate and promote the Round to Price Commitments',
+      workflow: 'Round Management',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }]
+  }, {
+    id: 'priceCommitments',
+    title: 'Price Commitments',
+    points: [{
+      text: 'Analyze your Commitments using the Scatter Plot and submit a Price for review',
+      workflow: 'Price Commitment',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Sales Rep']
+      },
+      tooltip: ['Sales Rep']
+    }, {
+      text: 'Review Commitments that are Pending Review and Approve or Reject them',
+      workflow: 'Commitment Management',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Product Manager']
+    }, {
+      text: 'Analyze your Commitments using the Scatter Plot without Salesforce',
+      workflow: 'Price Commitment (DataPoints)',
+      needPredicate: true,
+      needFCT: false,
+      nonSF: true,
+      permissions: {
+        Salesforce: ['Administrator'],
+        SAML: ['Administrator', 'Sales Rep'],
+        PV: ['Administrator', 'Sales Rep']
+      },
+      tooltip: ['Sales Rep']
+    }, {
+      text: 'Analyze your Potential Impact',
+      workflow: 'Administration - Potential Impact',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Analyze your Customer Margin Impact',
+      workflow: 'Customer Pricing Impact Analysis',
+      needPredicate: true,
+      needFCT: true,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Generate Sales Representative Booklet/Extracts',
+      workflow: 'Sales Representative Booklet Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Sales Rep'],
+        SAML: ['Administrator', 'Sales Rep'],
+        PV: ['Administrator', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Sales Rep']
+    }, {
+      text: 'Generate Regional Booklet/Extracts',
+      workflow: 'Regional Booklet Generation',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Sales Rep'],
+        SAML: ['Administrator', 'Sales Rep'],
+        PV: ['Administrator', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Sales Rep']
+    }, {
+      text: 'Track Commitment Completion Rates',
+      workflow: 'Administration - Commitment Completion Rates',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Validate and promote the Round to Impact Tracking',
+      workflow: 'Round Management',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator']
+      },
+      tooltip: ['Administrator']
+    }]
+  }, {
+    id: 'impactTracking',
+    title: 'Impact Tracking',
+    points: [{
+      text: 'Quarter on Quarter - Analyze Impact by reviewing each Segment',
+      workflow: 'Impact Analysis by Segment (Quarter on Quarter)',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Quarter on Quarter - Analyze total Impact based on selected dimensions',
+      workflow: 'Impact Analysis - Total (Quarter on Quarter)',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Year over Year - Analyze Impact by reviewing each Segment',
+      workflow: 'Impact Analysis by Segment (Year over Year)',
+      needPredicate: true,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Year over Year - Analyze total Impact based on selected dimensions',
+      workflow: 'Impact Analysis - Total (Year over Year)',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Year over Year - Analyze average per unit Impact based on selected dimensions',
+      workflow: 'Impact Analysis - Average (Year over Year)',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Year over Year - Analyze Impact Statistics',
+      workflow: 'Administration - Impact Statistics (Year over Year)',
+      needPredicate: false,
+      needFCT: false,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager', 'Sales Rep'],
+        SAML: ['Administrator', 'Product Manager', 'Sales Rep', 'Finance'],
+        PV: ['Administrator', 'Product Manager', 'Sales Rep']
+      },
+      tooltip: ['Administrator', 'Product Manager', 'Sales Rep']
+    }, {
+      text: 'Analyze Forecasted Raw Material Costs',
+      workflow: 'Forward Costing',
+      needPredicate: false,
+      needFCT: true,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Analyze Impact from Forecasted Raw Material Costs - Top Down Analysis',
+      workflow: 'Product Impact Analysis',
+      needPredicate: false,
+      needFCT: true,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }, {
+      text: 'Analyze Impact from Forecasted Raw Material Costs - Bottom Up Analysis',
+      workflow: 'Material Impact Analysis',
+      needPredicate: false,
+      needFCT: true,
+      permissions: {
+        Salesforce: ['Administrator', 'Product Manager'],
+        SAML: ['Administrator', 'Product Manager'],
+        PV: ['Administrator', 'Product Manager']
+      },
+      tooltip: ['Administrator', 'Product Manager']
+    }]
+  }];
+
+  let activeRange = true;
+  roundStatus.forEach(function(statusDetails) {
+    statusDetails.activeRange = activeRange;
+
+    if (statusDetails.title === phase) {
+      statusDetails.active = true;
+      activeRange = false;
+    }
+
+    createStatusTracker(statusDetails, $('#tracker'));
+  });
+
+  let height = 0;
+  let position = null;
+  roundStatus.forEach(function(statusDetails, i) {
+    let div = $('#' + statusDetails.id);
+    if (div.height() > height) {
+      height = div.height();
+    }
+    if (statusDetails.active) {
+      position = div.position();
+      if (i !== 0) {
+        position.left -= ($('body').width() - div.width()) / 2;
+      }
+    }
+  });
+  roundStatus.forEach(function(statusDetails) {
+    let div = $('#' + statusDetails.id);
+    div.height(height);
+  });
+  if (PV.isObject(position)) {
+    $('#tracker').scrollTop(position.top);
+    $('#tracker').scrollLeft(position.left);
+  }
+  </script>
+</body>
+
+</html>
