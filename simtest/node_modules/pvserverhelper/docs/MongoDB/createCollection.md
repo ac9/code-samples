@@ -7,9 +7,10 @@ Creates collection ``collectionName``. If ``drop`` is `true`, and the collection
 
 ```js
 pvh.createCollection(jsapi, 'Opportunities', true, [{
-    keys: {
+    key: {
         name: 1
-    }
+    },
+    name: 'name_1'
 }]).then(function(result) {
 
 });

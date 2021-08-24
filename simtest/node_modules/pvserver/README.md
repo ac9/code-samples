@@ -110,7 +110,7 @@ For a more indepth example, please consult the following [script](https://github
 
 ##Methods
 
-All functions can be used in [Promise](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise) style or with traditional Node callback style. This module uses [bluebird](http://bluebirdjs.com/docs/getting-started.html) to give you Promise.
+All functions can be used in [Promise](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise) style or with traditional Node callback style.
 
 If the function is called without a callback function, then it will return a Promise object, otherwise the call ``callback(err, json)`` will be used.
 

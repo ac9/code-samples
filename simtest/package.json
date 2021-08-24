@@ -1,6 +1,6 @@
 {
   "name": "pricing_tool_simtest",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Pricing Tool Simload Tests",
   "main": "main.js",
   "scripts": {
@@ -9,9 +9,9 @@
   "author": "Allen Chung",
   "license": "ISC",
   "dependencies": {
-    "fs-extra": "^8.1.0",
-    "pvjs": "^1.0.19",
-    "pvserverhelper": "^1.2.15",
+    "fs-extra": "^10.0.0",
+    "pvjs": "^1.1.7",
+    "pvserverhelper": "^2.0.22",
     "simload": "^0.1.7"
   }
 }

@@ -4,7 +4,7 @@
 /* jshint node: true */
 /* jshint unused: true */
 
-var prom = require('bluebird');
+var util = require('util');
 var qs = require('querystring');
 var formData = require('form-data');
 var url = require('url');
@@ -328,7 +328,7 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
     post.write(post_data);
     post.end();
 };
-PVServerAPI.prototype.sendRequest = prom.promisify(PVServerAPI.prototype.sendRequestAsync);
+PVServerAPI.prototype.sendRequest = util.promisify(PVServerAPI.prototype.sendRequestAsync);
 
 PVServerAPI.prototype.sendFormRequestAsync = function(operation, parameters, completionCallback) {
     var server = this;
@@ -367,7 +367,7 @@ PVServerAPI.prototype.sendFormRequestAsync = function(operation, parameters, com
         }
     });
 };
-PVServerAPI.prototype.sendFormRequest = prom.promisify(PVServerAPI.prototype.sendFormRequestAsync);
+PVServerAPI.prototype.sendFormRequest = util.promisify(PVServerAPI.prototype.sendFormRequestAsync);
 
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
@@ -394,7 +394,7 @@ PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionC
         completionCallback.call(this, err, null);
     });
 };
-PVServerAPI.prototype.login = prom.promisify(PVServerAPI.prototype.loginAsync);
+PVServerAPI.prototype.login = util.promisify(PVServerAPI.prototype.loginAsync);
 
 PVServerAPI.prototype.logout = function(completionCallback) {
 
@@ -406,7 +406,7 @@ PVServerAPI.prototype.logout = function(completionCallback) {
         completionCallback.call(this, err, json);
     });
 };
-PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
+PVServerAPI.prototype.logout = util.promisify(PVServerAPI.prototype.logout);
 
 const callHTML5PostOperation = function(html5loginContext, completionCallback, operation) {
     if (!operation) {
@@ -467,29 +467,25 @@ const callHTML5PostOperation = function(html5loginContext, completionCallback, o
 };
 
 PVServerAPI.prototype.refreshWorkflow = function(html5loginContext, completionCallback) {
-
     try {
         callHTML5PostOperation.bind(this)(html5loginContext, completionCallback, "WORKFLOW_REFRESH");
     } catch (err) {
         completionCallback.call(this, err, null);
     }
 };
-PVServerAPI.prototype.refreshWorkflow = prom.promisify(PVServerAPI.prototype.refreshWorkflow);
+PVServerAPI.prototype.refreshWorkflow = util.promisify(PVServerAPI.prototype.refreshWorkflow);
 
 PVServerAPI.prototype.getHTML5ShareLink = function(html5loginContext, completionCallback) {
-
     try {
         callHTML5PostOperation.bind(this)(html5loginContext, completionCallback, "WORKFLOW_GET_SHARE_LINK");
     } catch (err) {
         completionCallback.call(this, err, null);
     }
 };
-PVServerAPI.prototype.getHTML5ShareLink = prom.promisify(PVServerAPI.prototype.getHTML5ShareLink);
-
+PVServerAPI.prototype.getHTML5ShareLink = util.promisify(PVServerAPI.prototype.getHTML5ShareLink);
 
 module.exports = {
     'PVServerAPI': PVServerAPI,
     'PVServerError': PVServerError,
-    'jsonToXML': jsonToXML,
-    'Promise': prom
+    'jsonToXML': jsonToXML
 };

@@ -2,7 +2,7 @@
 Executes ``cmd`` in the command line/terminal.
 - `jsapi` `<Object>`
 - `cmd` `<String>`
-- `options` `<Object>` : Optional, default is `{maxBuffer: 1024 * 500}`
+- `options` `<Object>` : Optional
 
 ```js
 pvh.exec(jsapi, 'node main.js', options).then(function(result){

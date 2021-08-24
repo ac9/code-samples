@@ -1,6 +1,7 @@
-### ``loginWithSession(jsapi)``
-Calls the RPM API Login on with an existing session.
+### ``loginWithSession(jsapi, [options])``
+Calls the RPM API Login on with an existing session with ``options``.
 - `jsapi` `<Object>`
+- `options` `<Object>`
 
 ```js
 var jsapi = {
@@ -11,7 +12,9 @@ var jsapi = {
 		apiKey: 'ah1ht138ghwies'
 	}
 };
-pvh.loginWithSession(jsapi).then(function(success) {
+pvh.loginWithSession(jsapi, {
+	timeOut: 180 * 60
+}).then(function(success) {
     if (success) {
         console.log('Success');
     } else {
