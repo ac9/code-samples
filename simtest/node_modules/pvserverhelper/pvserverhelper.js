@@ -1143,7 +1143,8 @@ module.exports = {
         let providerModelId = sessionInfo.providerModelId;
         if (PV.isString(userId) && (
             (PV.isString(appName) && PV.isString(mongoDBHostName)) ||
-            (PV.isString(providerModelId)))) {
+            PV.isString(providerModelId) ||
+            (PV.isString(html5AppName) && PV.isString(html5DataSetId)))) {
           for (let i = 0; i < providerModelInfo.length; i++) {
             if (providerModelInfo[i].userId === userId && (
                 (providerModelInfo[i].appName === appName && providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||

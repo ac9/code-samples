@@ -11,7 +11,7 @@
   "dependencies": {
     "fs-extra": "^10.0.0",
     "pvjs": "^1.1.7",
-    "pvserverhelper": "^2.0.22",
+    "pvserverhelper": "^2.0.23",
     "simload": "^0.1.7"
   }
 }
